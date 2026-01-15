@@ -2,10 +2,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { FilterState, Movie, FetchResponse } from "../types";
 
-// Vite-ისთვის სწორი ფორმაა import.meta.env
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-const ai = new GoogleGenAI({ apiKey: apiKey });
-
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const TMDB_API_KEY = 'd877fc4def9cce3c864d7abe176cb0ac';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
@@ -56,7 +53,7 @@ async function translateBatch(movies: any[]): Promise<Record<string, any>> {
   try {
     const list = toTranslate.map(m => ({ id: m.id, t: m.title, o: m.overview.slice(0, 300) }));
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-3-flash-preview",
       contents: `Translate the following movie data into Georgian. 
       Return ONLY a JSON object: {"ID": {"title": "Georgian Title", "overview": "Georgian Plot"}}.
       Data: ${JSON.stringify(list)}`,

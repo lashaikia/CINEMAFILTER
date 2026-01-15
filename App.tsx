@@ -103,7 +103,7 @@ const App: React.FC = () => {
               <div className="w-10 h-10 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:rotate-12 transition-transform">
                 <i className="fas fa-film text-black"></i>
               </div>
-              <h1 className="text-xl font-black uppercase tracking-tighter group-hover:text-cyan-400 transition-colors">CINEPRO</h1>
+              <h1 className="text-xl font-black uppercase tracking-tighter group-hover:text-cyan-400 transition-colors">ფილისაძიებო</h1>
             </div>
             
             {/* Search */}

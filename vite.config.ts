@@ -5,15 +5,14 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
-      base: '/CINEMAFILTER/', // <--- დაამატეთ ეს ხაზი (თუ რეპოზიტორიის სახელი ესაა)
       server: {
         port: 3000,
         host: '0.0.0.0',
       },
       plugins: [react()],
       define: {
-        'process.env.GEMINI_API_KEY': JSON.stringify('AIzaSyD4C6c-F-3Rf1wwXzxeFygMeMuJIOgmSeQ'),
-    'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify('AIzaSyD4C6c-F-3Rf1wwXzxeFygMeMuJIOgmSeQ')
+        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
       },
       resolve: {
         alias: {
