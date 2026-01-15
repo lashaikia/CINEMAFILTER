@@ -1,6 +1,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { FilterState, Movie, FetchResponse } from "../types";
+import.meta.env.VITE_GEMINI_API_KEY
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const TMDB_API_KEY = 'd877fc4def9cce3c864d7abe176cb0ac';
