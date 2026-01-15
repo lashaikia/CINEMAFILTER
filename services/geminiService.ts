@@ -9,7 +9,6 @@ const ai = new GoogleGenAI({ apiKey: apiKey });
 const TMDB_API_KEY = 'd877fc4def9cce3c864d7abe176cb0ac';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
 const GENRE_MAP: Record<string, number> = {
   "მძაფრსიუჟეტიანი": 28,
