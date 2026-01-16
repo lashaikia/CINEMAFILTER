@@ -51,8 +51,9 @@ const App: React.FC = () => {
   const handleApply = () => {
     setShowFilters(false);
     setShowOnlyFavorites(false);
-    setFilters(prev => ({ ...prev, page: 1 }));
-    performSearch({...filters, page: 1});
+    const newFilters = { ...filters, page: 1 };
+    setFilters(newFilters);
+    performSearch(newFilters);
   };
 
   const handleReset = () => {
@@ -82,6 +83,16 @@ const App: React.FC = () => {
     localStorage.setItem('cinepro_favorites', JSON.stringify(newFavs));
   };
 
+  const toggleGenre = (genre: string) => {
+    const newGenres = filters.genres.includes(genre)
+      ? filters.genres.filter(g => g !== genre)
+      : [...filters.genres, genre];
+    
+    const newFilters = { ...filters, genres: newGenres, page: 1 };
+    setFilters(newFilters);
+    performSearch(newFilters);
+  };
+
   const toggleList = (list: string[], item: string) => 
     list.includes(item) ? list.filter(i => i !== item) : [...list, item];
 
@@ -95,8 +106,8 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#060910] text-slate-100 font-['Fira_GO'] pb-20">
-      <header className="sticky top-0 z-50 bg-[#060910]/98 backdrop-blur-3xl border-b border-white/5 py-4">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8 space-y-4">
+      <header className="sticky top-0 z-50 bg-[#060910]/95 backdrop-blur-3xl border-b border-white/5 py-4">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 space-y-6">
           <div className="flex flex-col lg:flex-row gap-4 items-center">
             {/* Logo */}
             <div className="flex items-center gap-3 shrink-0 cursor-pointer group" onClick={handleReset}>
@@ -111,8 +122,8 @@ const App: React.FC = () => {
               <i className="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-slate-500"></i>
               <input
                 type="text"
-                placeholder="მოძებნე ფილმი..."
-                className="w-full bg-slate-900 border border-white/10 rounded-xl py-3.5 pl-14 pr-6 focus:outline-none focus:border-cyan-500 transition-all text-sm"
+                placeholder="მოძებნე ფილმი დასახელებით..."
+                className="w-full bg-slate-900 border border-white/10 rounded-xl py-4 pl-14 pr-6 focus:outline-none focus:border-cyan-500 transition-all text-sm shadow-2xl shadow-black/50"
                 value={filters.searchQuery}
                 onChange={(e) => setFilters({...filters, searchQuery: e.target.value})}
                 onKeyDown={(e) => e.key === 'Enter' && handleApply()}
@@ -141,47 +152,48 @@ const App: React.FC = () => {
               </select>
 
               <button 
-                onClick={() => setFilters(prev => ({...prev, viewMode: prev.viewMode === 'grid' ? 'list' : 'grid'}))}
-                className="h-11 w-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-cyan-500 transition-colors shrink-0"
-              >
-                <i className={`fas fa-${filters.viewMode === 'grid' ? 'list' : 'th-large'} text-xs`}></i>
-              </button>
-
-              <button 
                 onClick={() => setShowFilters(!showFilters)} 
                 className={`h-11 px-5 rounded-xl border border-white/10 font-bold flex items-center gap-2 transition-all shrink-0 ${showFilters ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50' : 'bg-white/5 text-slate-400'}`}
               >
                 <i className="fas fa-sliders-h text-xs"></i>
-                <span className="text-[10px] uppercase tracking-[0.2em] hidden sm:inline">ფილტრები</span>
+                <span className="text-[10px] uppercase tracking-[0.2em] hidden sm:inline">დეტალურად</span>
               </button>
+            </div>
+          </div>
+
+          {/* Expanded Genres Section */}
+          <div className="bg-white/5 border border-white/5 rounded-2xl p-4 animate-in fade-in duration-500">
+            <div className="flex items-center justify-between mb-3 px-1">
+              <span className="text-[9px] font-black uppercase text-slate-500 tracking-[0.3em]">აირჩიე ჟანრი:</span>
+              {filters.genres.length > 0 && (
+                <button onClick={() => { setFilters({...filters, genres: [], page: 1}); performSearch({...filters, genres: [], page: 1}); }} className="text-[9px] font-black text-cyan-500 uppercase hover:text-white transition-colors">
+                  <i className="fas fa-times mr-1"></i> გასუფთავება
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {GENRES.map(genre => (
+                <button
+                  key={genre}
+                  onClick={() => toggleGenre(genre)}
+                  className={`genre-chip px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${
+                    filters.genres.includes(genre)
+                      ? 'bg-cyan-500 border-cyan-400 text-black shadow-[0_0_15px_rgba(6,182,212,0.3)]'
+                      : 'bg-slate-800/40 border-white/5 text-slate-400 hover:border-white/20 hover:text-white'
+                  }`}
+                >
+                  {genre}
+                </button>
+              ))}
             </div>
           </div>
 
           {showFilters && (
             <div className="p-6 bg-slate-900 border border-white/5 rounded-2xl animate-in slide-in-from-top duration-300">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div>
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-3 flex justify-between">
-                    ჟანრები <span>({filters.genres.length})</span>
-                  </label>
-                  <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-2 custom-scrollbar bg-black/20 p-3 rounded-xl border border-white/5">
-                    {GENRES.map(g => (
-                      <button 
-                        key={g} 
-                        onClick={() => setFilters({...filters, genres: toggleList(filters.genres, g)})}
-                        className={`px-3 py-1.5 rounded-lg text-[9px] font-bold border transition-all ${filters.genres.includes(g) ? 'bg-cyan-500 border-cyan-400 text-black' : 'bg-slate-800 border-white/5 text-slate-400 hover:border-white/20'}`}
-                      >
-                        {g}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-3 flex justify-between">
-                    ქვეყანა <span>({filters.countries.length})</span>
-                  </label>
-                  <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-2 custom-scrollbar bg-black/20 p-3 rounded-xl border border-white/5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-3">ქვეყანა</label>
+                  <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
                     {Object.entries(COUNTRIES).map(([code, name]) => (
                       <button 
                         key={code} 
@@ -196,7 +208,7 @@ const App: React.FC = () => {
 
                 <div className="space-y-6">
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-3">წლების ინტერვალი</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-3">წლები</label>
                     <div className="flex items-center gap-2">
                       <input type="number" min="1900" max="2025" value={filters.years[0]} onChange={e => setFilters({...filters, years: [parseInt(e.target.value), filters.years[1]]})} className="w-full bg-slate-800 border border-white/5 rounded-lg p-2.5 text-[10px] text-white focus:border-cyan-500 outline-none" />
                       <span className="text-slate-600">-</span>
@@ -204,17 +216,17 @@ const App: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-3">მინ. რეიტინგი: {filters.minRating}+</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-3">რეიტინგი: {filters.minRating}+</label>
                     <input type="range" min="0" max="10" step="0.5" value={filters.minRating} onChange={e => setFilters({...filters, minRating: parseFloat(e.target.value)})} className="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-3 justify-end">
-                  <button onClick={handleReset} className="w-full h-10 border border-white/10 text-slate-500 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all bg-white/5">
-                    ფილტრების გასუფთავება
+                  <button onClick={handleReset} className="w-full h-12 border border-white/10 text-slate-500 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">
+                    საწყისი პარამეტრები
                   </button>
                   <button onClick={handleApply} className="w-full h-14 bg-cyan-600 hover:bg-cyan-500 text-black font-black rounded-xl uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-cyan-500/10 transition-all active:scale-95">
-                    შედეგების ნახვა
+                    ფილტრის გამოყენება
                   </button>
                 </div>
               </div>
@@ -227,7 +239,7 @@ const App: React.FC = () => {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-40 gap-4">
             <div className="w-12 h-12 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] animate-pulse text-center">იტვირთება მონაცემები...</p>
+            <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] animate-pulse text-center">იტვირთება...</p>
           </div>
         ) : displayedMovies.length > 0 ? (
           <>
@@ -257,13 +269,13 @@ const App: React.FC = () => {
           <div className="text-center py-40">
             <i className="fas fa-ghost text-4xl text-slate-800 mb-4 block"></i>
             <p className="text-slate-500 text-sm font-medium">ფილმები ვერ მოიძებნა</p>
-            <button onClick={handleReset} className="mt-4 text-cyan-500 text-[10px] font-black uppercase tracking-widest hover:underline">საწყის გვერდზე დაბრუნება</button>
+            <button onClick={handleReset} className="mt-4 text-cyan-500 text-[10px] font-black uppercase tracking-widest hover:underline">ყველას ნახვა</button>
           </div>
         )}
       </main>
 
       {selectedMovie && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/98 backdrop-blur-3xl animate-in fade-in duration-300 overflow-y-auto">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/98 backdrop-blur-3xl animate-in fade-in duration-300 overflow-y-auto custom-scrollbar">
           <div className="bg-[#0b101a] border border-white/10 rounded-[2.5rem] max-w-5xl w-full flex flex-col md:flex-row overflow-hidden shadow-2xl relative my-8">
             <button onClick={() => setSelectedMovie(null)} className="absolute top-6 right-6 z-50 w-11 h-11 bg-black/50 rounded-full flex items-center justify-center text-white border border-white/10 hover:bg-red-500 transition-all">
               <i className="fas fa-times"></i>
