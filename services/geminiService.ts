@@ -1,11 +1,13 @@
-// @ts-ignore
-import { GoogleGenAI } from "@google/genai";
+// 1. სწორი იმპორტი (დარწმუნდით, რომ ეს ხაზი ზუსტად ასეა)
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { FilterState, Movie, FetchResponse } from "../types";
 
-// (import.meta as any) გამოიყენება, რომ TypeScript-მა env-ზე არ იჩხუბოს
+// 2. API გასაღების წაკითხვა
 const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+
+// 3. ინიციალიზაცია
 const genAI = new GoogleGenerativeAI(apiKey || "");
-const ai = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 
 const TMDB_API_KEY = 'd877fc4def9cce3c864d7abe176cb0ac';
@@ -51,30 +53,20 @@ const setCached = (id: string, data: any) => {
   localStorage.setItem(`c_${id}`, JSON.stringify(data));
 };
 
-async function translateBatch(movies: any[]): Promise<Record<string, any>> {
-  const toTranslate = movies.filter(m => !getCached(m.id));
-  if (toTranslate.length === 0) return {};
-
+async function translateBatch(movies: any[]) {
+  // ... (წინა კოდი) ...
   try {
     const list = toTranslate.map(m => ({ id: m.id, t: m.title, o: m.overview.slice(0, 300) }));
-    const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: `Translate the following movie data into Georgian. 
-      Return ONLY a JSON object: {"ID": {"title": "Georgian Title", "overview": "Georgian Plot"}}.
-      Data: ${JSON.stringify(list)}`,
-      config: { responseMimeType: "application/json" }
-    });
     
-    // აი აქ დავამატეთ შემოწმება, რომ response.text() არ იყოს undefined
-    const responseText = response && (response as any).text ? (response as any).text : ""; 
+    // აქ გამოიყენეთ 'model.generateContent' ნაცვლად 'ai.models.generateContent'
+    const result = await model.generateContent(`Translate the following movie data into Georgian. 
+      Return ONLY a JSON object: {"ID": {"title": "Georgian Title", "overview": "Georgian Plot"}}.
+      Data: ${JSON.stringify(list)}`);
+    
+    const response = await result.response;
+    const responseText = response.text(); 
+    
     if (!responseText) return {};
-
-    const results = JSON.parse(responseText.trim());
-    Object.entries(results).forEach(([id, data]) => setCached(id, data));
-    return results;
-  } catch (e) {
-    console.error("Translation error:", e);
-    return {};
   }
 }
 
