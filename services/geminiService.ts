@@ -1,8 +1,10 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { FilterState, Movie, FetchResponse } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// For Vite, use import.meta.env
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+const ai = new GoogleGenAI({ apiKey: apiKey });
+
 const TMDB_API_KEY = 'd877fc4def9cce3c864d7abe176cb0ac';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
@@ -53,7 +55,7 @@ async function translateBatch(movies: any[]): Promise<Record<string, any>> {
   try {
     const list = toTranslate.map(m => ({ id: m.id, t: m.title, o: m.overview.slice(0, 300) }));
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-1.5-flash", // Changed to stable model
       contents: `Translate the following movie data into Georgian. 
       Return ONLY a JSON object: {"ID": {"title": "Georgian Title", "overview": "Georgian Plot"}}.
       Data: ${JSON.stringify(list)}`,
@@ -64,6 +66,7 @@ async function translateBatch(movies: any[]): Promise<Record<string, any>> {
     Object.entries(results).forEach(([id, data]) => setCached(id, data));
     return results;
   } catch (e) {
+    console.error("Translation error:", e);
     return {};
   }
 }
@@ -82,7 +85,6 @@ export const fetchMovies = async (filters: FilterState): Promise<FetchResponse> 
     if (filters.searchQuery) {
       url = `${TMDB_BASE_URL}/search/movie?${params.toString()}&query=${encodeURIComponent(filters.searchQuery)}`;
     } else {
-      // Use comma (,) for AND logic (precise matches)
       const genreIds = Array.from(new Set(filters.genres.map(g => GENRE_MAP[g]).filter(Boolean))).join(',');
       const countryCodes = filters.countries.join('|');
       
@@ -129,6 +131,7 @@ export const fetchMovies = async (filters: FilterState): Promise<FetchResponse> 
 
     return { movies, totalPages: Math.min(data.total_pages || 1, 500) };
   } catch (error) {
+    console.error("Fetch error:", error);
     return { movies: [], totalPages: 0 };
   }
 };
