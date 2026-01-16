@@ -1,14 +1,12 @@
-// 1. სწორი იმპორტი (დარწმუნდით, რომ ეს ხაზი ზუსტად ასეა)
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { FilterState, Movie, FetchResponse } from "../types";
 
-// 2. API გასაღების წაკითხვა
+// API გასაღების წაკითხვა
 const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
 
-// 3. ინიციალიზაცია
+// ინიციალიზაცია
 const genAI = new GoogleGenerativeAI(apiKey || "");
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
 
 const TMDB_API_KEY = 'd877fc4def9cce3c864d7abe176cb0ac';
 const TMDB_BASE_URL = 'https://api.themoviedb.org';
@@ -53,12 +51,13 @@ const setCached = (id: string, data: any) => {
   localStorage.setItem(`c_${id}`, JSON.stringify(data));
 };
 
-async function translateBatch(movies: any[]) {
-  // ... (წინა კოდი) ...
+async function translateBatch(movies: any[]): Promise<Record<string, any>> {
+  const toTranslate = movies.filter(m => !getCached(m.id));
+  if (toTranslate.length === 0) return {};
+
   try {
     const list = toTranslate.map(m => ({ id: m.id, t: m.title, o: m.overview.slice(0, 300) }));
     
-    // აქ გამოიყენეთ 'model.generateContent' ნაცვლად 'ai.models.generateContent'
     const result = await model.generateContent(`Translate the following movie data into Georgian. 
       Return ONLY a JSON object: {"ID": {"title": "Georgian Title", "overview": "Georgian Plot"}}.
       Data: ${JSON.stringify(list)}`);
@@ -67,6 +66,13 @@ async function translateBatch(movies: any[]) {
     const responseText = response.text(); 
     
     if (!responseText) return {};
+    
+    const results = JSON.parse(responseText.trim());
+    Object.entries(results).forEach(([id, data]) => setCached(id, data));
+    return results;
+  } catch (error) {
+    console.error("Translation error:", error);
+    return {};
   }
 }
 
@@ -90,7 +96,6 @@ export const fetchMovies = async (filters: FilterState): Promise<FetchResponse> 
       params.append('sort_by', filters.sortBy);
       params.append('vote_average.gte', filters.minRating.toString());
       
-      // წლების ფილტრის მასივის დამუშავება
       const yearStart = Array.isArray(filters.years) ? filters.years[0] : 1900;
       const yearEnd = Array.isArray(filters.years) ? filters.years[1] : 2026;
 
@@ -109,7 +114,7 @@ export const fetchMovies = async (filters: FilterState): Promise<FetchResponse> 
     
     const translations = await translateBatch(rawMovies);
 
-    const movies = await Promise.all(rawMovies.map(async (m: any) => {
+    const movies: Movie[] = await Promise.all(rawMovies.map(async (m: any) => {
       const detailRes = await fetch(`${TMDB_BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&append_to_response=videos,credits,external_ids&language=ka-GE`);
       const details = await detailRes.json();
       
