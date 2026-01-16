@@ -13,32 +13,12 @@ const TMDB_BASE_URL = 'https://api.themoviedb.org';
 const IMAGE_BASE_URL = 'https://image.tmdb.org';
 
 const GENRE_MAP: Record<string, number> = {
-  "მძაფრსიუჟეტიანი": 28,
-  "სათავგადასავლო": 12,
-  "ანიმაციური": 16,
-  "ბიოგრაფიული": 36,
-  "კომედია": 35,
-  "კრიმინალური": 80,
-  "დოკუმენტური": 99,
-  "დრამა": 18,
-  "საოჯახო": 10751,
-  "ფენტეზი": 14,
-  "ისტორიული": 36,
-  "საშინელებათა": 27,
-  "მუსიკალური": 10402,
-  "დეტექტივი": 9648,
-  "მელოდრამა": 10749,
-  "ფანტასტიკა": 878,
-  "თრილერი": 53,
-  "საომარი": 10752,
-  "ვესტერნი": 37,
-  "მისტიკა": 9648,
-  "ანიმე": 16,
-  "ფსიქოლოგიური": 53,
-  "სუპერგმირული": 28,
-  "კიბერპანკი": 878,
-  "სლეშერი": 27,
-  "პოსტ-აპოკალიფსური": 878,
+  "მძაფრსიუჟეტიანი": 28, "სათავგადასავლო": 12, "ანიმაციური": 16, "ბიოგრაფიული": 36,
+  "კომედია": 35, "კრიმინალური": 80, "დოკუმენტური": 99, "დრამა": 18, "საოჯახო": 10751,
+  "ფენტეზი": 14, "ისტორიული": 36, "საშინელებათა": 27, "მუსიკალური": 10402,
+  "დეტექტივი": 9648, "მელოდრამა": 10749, "ფანტასტიკა": 878, "თრილერი": 53,
+  "საომარი": 10752, "ვესტერნი": 37, "მისტიკა": 9648, "ანიმე": 16, "ფსიქოლოგიური": 53,
+  "სუპერგმირული": 28, "კიბერპანკი": 878, "სლეშერი": 27, "პოსტ-აპოკალიფსური": 878,
   "ეროტიკული (18+)": 10749
 };
 
@@ -57,16 +37,12 @@ async function translateBatch(movies: any[]): Promise<Record<string, any>> {
 
   try {
     const list = toTranslate.map(m => ({ id: m.id, t: m.title, o: m.overview.slice(0, 300) }));
-    
     const result = await model.generateContent(`Translate the following movie data into Georgian. 
       Return ONLY a JSON object: {"ID": {"title": "Georgian Title", "overview": "Georgian Plot"}}.
       Data: ${JSON.stringify(list)}`);
-    
     const response = await result.response;
-    const responseText = response.text(); 
-    
+    const responseText = response.text();
     if (!responseText) return {};
-    
     const results = JSON.parse(responseText.trim());
     Object.entries(results).forEach(([id, data]) => setCached(id, data));
     return results;
@@ -92,35 +68,30 @@ export const fetchMovies = async (filters: FilterState): Promise<FetchResponse> 
     } else {
       const genreIds = Array.from(new Set(filters.genres.map(g => GENRE_MAP[g]).filter(Boolean))).join(',');
       const countryCodes = filters.countries.join('|');
-      
       params.append('sort_by', filters.sortBy);
       params.append('vote_average.gte', filters.minRating.toString());
-      
+
       const yearStart = Array.isArray(filters.years) ? filters.years[0] : 1900;
       const yearEnd = Array.isArray(filters.years) ? filters.years[1] : 2026;
-
       params.append('primary_release_date.gte', `${yearStart}-01-01`);
       params.append('primary_release_date.lte', `${yearEnd}-12-31`);
-      
+
       if (genreIds) params.append('with_genres', genreIds);
       if (countryCodes) params.append('with_origin_country', countryCodes);
-      
       url = `${TMDB_BASE_URL}/discover/movie?${params.toString()}`;
     }
 
     const response = await fetch(url);
     const data = await response.json();
     const rawMovies = data.results || [];
-    
     const translations = await translateBatch(rawMovies);
 
     const movies: Movie[] = await Promise.all(rawMovies.map(async (m: any) => {
       const detailRes = await fetch(`${TMDB_BASE_URL}/movie/${m.id}?api_key=${TMDB_API_KEY}&append_to_response=videos,credits,external_ids&language=ka-GE`);
       const details = await detailRes.json();
-      
       const trans = translations[m.id] || getCached(m.id.toString());
       const trailer = details.videos?.results?.find((v: any) => v.type === 'Trailer' && v.site === 'YouTube');
-      
+
       return {
         id: m.id.toString(),
         title: trans?.title || m.title || m.original_title,
