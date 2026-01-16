@@ -64,7 +64,7 @@ async function translateBatch(movies: any[]): Promise<Record<string, any>> {
     });
     
     // აი აქ დავამატეთ შემოწმება, რომ response.text() არ იყოს undefined
-    const responseText = response && response.text ? response.text() : "";
+    const responseText = response && (response as any).text ? (response as any).text : ""; 
     if (!responseText) return {};
 
     const results = JSON.parse(responseText.trim());
