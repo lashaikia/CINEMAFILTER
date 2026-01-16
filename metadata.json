@@ -1,5 +1,5 @@
 {
-  "name": "CineFilter AI - ფილმების საძიებო სისტემა",
-  "description": "A powerful movie search and recommendation engine powered by Gemini AI, featuring advanced filtering for any genre.",
+  "name": "ფილისაძიებო - AI Movie Search",
+  "description": "ფილმების საძიებო სისტემა შექმნილი Gemini AI-ს მიერ.",
   "requestFramePermissions": []
 }
