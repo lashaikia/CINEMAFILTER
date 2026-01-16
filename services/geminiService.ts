@@ -1,13 +1,14 @@
+// @ts-ignore
 import { GoogleGenAI } from "@google/genai";
 import { FilterState, Movie, FetchResponse } from "../types";
 
-// For Vite, use import.meta.env
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+// (import.meta as any) გამოიყენება, რომ TypeScript-მა env-ზე არ იჩხუბოს
+const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
 const ai = new GoogleGenAI({ apiKey: apiKey });
 
 const TMDB_API_KEY = 'd877fc4def9cce3c864d7abe176cb0ac';
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
+const TMDB_BASE_URL = 'https://api.themoviedb.org';
+const IMAGE_BASE_URL = 'https://image.tmdb.org';
 
 const GENRE_MAP: Record<string, number> = {
   "მძაფრსიუჟეტიანი": 28,
@@ -55,14 +56,18 @@ async function translateBatch(movies: any[]): Promise<Record<string, any>> {
   try {
     const list = toTranslate.map(m => ({ id: m.id, t: m.title, o: m.overview.slice(0, 300) }));
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash", // Changed to stable model
+      model: "gemini-1.5-flash",
       contents: `Translate the following movie data into Georgian. 
       Return ONLY a JSON object: {"ID": {"title": "Georgian Title", "overview": "Georgian Plot"}}.
       Data: ${JSON.stringify(list)}`,
       config: { responseMimeType: "application/json" }
     });
     
-    const results = JSON.parse(response.text.trim());
+    // აი აქ დავამატეთ შემოწმება, რომ response.text() არ იყოს undefined
+    const responseText = response && response.text ? response.text() : "";
+    if (!responseText) return {};
+
+    const results = JSON.parse(responseText.trim());
     Object.entries(results).forEach(([id, data]) => setCached(id, data));
     return results;
   } catch (e) {
@@ -90,8 +95,13 @@ export const fetchMovies = async (filters: FilterState): Promise<FetchResponse> 
       
       params.append('sort_by', filters.sortBy);
       params.append('vote_average.gte', filters.minRating.toString());
-      params.append('primary_release_date.gte', `${filters.years[0]}-01-01`);
-      params.append('primary_release_date.lte', `${filters.years[1]}-12-31`);
+      
+      // წლების ფილტრის მასივის დამუშავება
+      const yearStart = Array.isArray(filters.years) ? filters.years[0] : 1900;
+      const yearEnd = Array.isArray(filters.years) ? filters.years[1] : 2026;
+
+      params.append('primary_release_date.gte', `${yearStart}-01-01`);
+      params.append('primary_release_date.lte', `${yearEnd}-12-31`);
       
       if (genreIds) params.append('with_genres', genreIds);
       if (countryCodes) params.append('with_origin_country', countryCodes);
@@ -123,9 +133,9 @@ export const fetchMovies = async (filters: FilterState): Promise<FetchResponse> 
         description: trans?.overview || details.overview || "აღწერა არ არის.",
         director: details.credits?.crew?.find((c: any) => c.job === 'Director')?.name || 'უცნობია',
         cast: details.credits?.cast?.slice(0, 5).map((c: any) => c.name) || [],
-        posterUrl: m.poster_path ? `${IMAGE_BASE_URL}${m.poster_path}` : `https://picsum.photos/seed/${m.id}/400/600`,
-        trailerUrl: trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : `https://www.youtube.com/results?search_query=${encodeURIComponent(m.original_title + ' trailer')}`,
-        imdbUrl: details.external_ids?.imdb_id ? `https://www.imdb.com/title/${details.external_ids.imdb_id}` : `https://www.themoviedb.org/movie/${m.id}`
+        posterUrl: m.poster_path ? `${IMAGE_BASE_URL}${m.poster_path}` : `https://picsum.photos{m.id}/400/600`,
+        trailerUrl: trailer ? `https://www.youtube.com{trailer.key}` : `https://www.youtube.com{encodeURIComponent(m.original_title + ' trailer')}`,
+        imdbUrl: details.external_ids?.imdb_id ? `https://www.imdb.com{details.external_ids.imdb_id}` : `https://www.themoviedb.org{m.id}`
       };
     }));
 
