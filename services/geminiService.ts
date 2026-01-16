@@ -4,6 +4,8 @@ import { FilterState, Movie, FetchResponse } from "../types";
 
 // (import.meta as any) გამოიყენება, რომ TypeScript-მა env-ზე არ იჩხუბოს
 const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+const genAI = new GoogleGenerativeAI(apiKey || "");
+const ai = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 const ai = new GoogleGenAI({ apiKey: apiKey });
 
 const TMDB_API_KEY = 'd877fc4def9cce3c864d7abe176cb0ac';
