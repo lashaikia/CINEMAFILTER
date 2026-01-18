@@ -59,7 +59,8 @@ async function translateBatch(movies: any[]): Promise<Record<string, any>> {
       config: { responseMimeType: "application/json" }
     });
     
-    const results = JSON.parse(response.text.trim());
+    const textContent = response.text?.() ?? "[]";
+    const results = JSON.parse(textContent.trim());
     Object.entries(results).forEach(([id, data]) => setCached(id, data));
     return results;
   } catch (e) {
